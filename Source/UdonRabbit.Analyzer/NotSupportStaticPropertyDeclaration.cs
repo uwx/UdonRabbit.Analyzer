@@ -15,7 +15,7 @@ namespace UdonRabbit.Analyzer
     {
         public const string ComponentId = "URA0050";
         private const string Category = UdonConstants.UdonSharpCategory;
-        private const string HelpLinkUri = "https://github.com/esnya/UdonRabbit.Analyzer/blob/master/docs/analyzers/URA0050.md";
+        private const string HelpLinkUri = "https://github.com/uwx/UdonRabbit.Analyzer/blob/master/docs/analyzers/URA0050.md";
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.URA0050Title), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.URA0050MessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.URA0050Description), Resources.ResourceManager, typeof(Resources));
@@ -36,7 +36,7 @@ namespace UdonRabbit.Analyzer
             if (!UdonSharpBehaviourUtility.ShouldAnalyzeSyntax(context.SemanticModel, declaration))
                 return;
 
-            if (UdonSharpBehaviourUtility.IsUdonSharpLessThan(context.Compilation.ExternalReferences.ToList(), "0.20.0"))
+            if (UdonSharpBehaviourUtility.IsUdonSharpLessThan(context.Compilation.ExternalReferences, "0.20.0"))
                 return;
 
             if (declaration.Modifiers.Any(SyntaxKind.StaticKeyword))

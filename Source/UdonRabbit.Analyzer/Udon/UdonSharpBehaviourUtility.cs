@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using UdonRabbit.Analyzer.Utils;
 
 namespace UdonRabbit.Analyzer.Udon
 {
@@ -23,9 +25,65 @@ namespace UdonRabbit.Analyzer.Udon
             var classDecl = node.FirstAncestorOrSelf<ClassDeclarationSyntax>();
             if (classDecl == null)
                 return false;
+            
+            var declSymbol = semanticModel.GetDeclaredSymbol(classDecl);
 
-            var declSymbol = (INamedTypeSymbol) ModelExtensions.GetDeclaredSymbol(semanticModel, classDecl);
-            return declSymbol.BaseType.Equals(semanticModel.Compilation.GetTypeByMetadataName(UdonConstants.UdonSharpBehaviourFullName), SymbolEqualityComparer.Default);
+            // is UdonSharpBehaviour
+            if (declSymbol.BaseType.Equals(semanticModel.Compilation.GetTypeByMetadataName(UdonConstants.UdonSharpBehaviourFullName), SymbolEqualityComparer.Default))
+                return true;
+
+            // is disallowed namespace
+            var ns = declSymbol.ContainingNamespace.ToDisplayString();
+            if (ns.StartsWith("UnityEngine.") ||
+                ns == "UnityEngine" ||
+                ns.StartsWith("UnityEditor.") ||
+                ns == "UnityEditor" ||
+                ns.StartsWith("Unity.") ||
+                ns == "Unity" ||
+                ns.StartsWith("System.") ||
+                ns == "System" ||
+                ns.StartsWith("TMPro.") ||
+                ns == "TMPro" ||
+                ns.StartsWith("VRC.") ||
+                ns == "VRC" ||
+                ns.StartsWith("VRCSDK3.") ||
+                ns == "VRCSDK3" ||
+                ns.StartsWith("VRCSDKBase.") ||
+                ns == "VRCSDKBase" ||
+                ns.StartsWith("UdonSharp.") ||
+                ns == "UdonSharp" ||
+                ns.StartsWith("Cysharp.Threading.Tasks.") ||
+                ns == "Cysharp.Threading.Tasks")
+                return false;
+
+            // is in PackageCache
+            var filePath = node.GetLocation().SourceTree?.FilePath;
+            if (filePath?.Contains("PackageCache") == true)
+                return false;
+
+            if (filePath?.Contains("Packages/com.vrchat.base") == true ||
+                filePath?.Contains("Packages/com.vrchat.worlds") == true ||
+                filePath?.Contains("Packages/com.merlin.UdonSharp") == true ||
+                filePath?.Contains("Packages/com.vrchat.core.vpm-resolver") == true || 
+                filePath?.Contains("Packages\\com.vrchat.base") == true ||
+                filePath?.Contains("Packages\\com.vrchat.worlds") == true ||
+                filePath?.Contains("Packages\\com.merlin.UdonSharp") == true ||
+                filePath?.Contains("Packages\\com.vrchat.core.vpm-resolver") == true)
+                return false;
+            
+            // is not [UdonRabbitIgnore]
+            var udonRabbitIgnoreAttributeSymbol = semanticModel.Compilation.GetTypeByMetadataName(UdonConstants.UdonRabbitIgnoreAttributeFullName);
+            if (classDecl.AttributeLists.SelectMany(w => w.Attributes)
+                .Select(w => (INamedTypeSymbol) semanticModel.GetDeclaredSymbol(w))
+                .Any(w => w.Equals(udonRabbitIgnoreAttributeSymbol, SymbolEqualityComparer.Default)))
+                return false;
+
+            UdonRabbitLogger.Log($"Analyzing {declSymbol.Name}");
+            UdonRabbitLogger.Log($"Namespace: {ns}");
+            UdonRabbitLogger.Log($"Location: {node.GetLocation()}");
+
+            // is source file
+            return declSymbol.Locations.All(static w => w.IsInSource);
         }
 
         public static void ReportDiagnosticsIfValid(SyntaxNodeAnalysisContext context, DiagnosticDescriptor descriptor, CSharpSyntaxNode node, params object[] messageArgs)
@@ -86,6 +144,7 @@ namespace UdonRabbit.Analyzer.Udon
             {
                 TypeKind.Array when symbol is IArrayTypeSymbol a => IsUserDefinedTypes(model, a.ElementType, a.ElementType.TypeKind),
                 TypeKind.Class => IsUserDefinedTypesInternal(model, symbol), // UdonSharp currently support user-defined types only.
+                TypeKind.Enum => true,
                 _ => false
             };
         }
@@ -175,7 +234,7 @@ namespace UdonRabbit.Analyzer.Udon
             };
         }
 
-        public static bool IsUdonSharpGreaterThanOrEquals(List<MetadataReference> references, string version)
+        public static bool IsUdonSharpGreaterThanOrEquals(IReadOnlyList<MetadataReference> references, string version)
         {
             if (!UdonAssemblyVersion.IsAlreadyEvaluated)
                 UdonAssemblyVersion.Initialize(references);
@@ -186,7 +245,7 @@ namespace UdonRabbit.Analyzer.Udon
             return actualVersion.CompareTo(targetVersion) >= 0;
         }
 
-        public static bool IsUdonSharpGreaterThan(List<MetadataReference> references, string version)
+        public static bool IsUdonSharpGreaterThan(IReadOnlyList<MetadataReference> references, string version)
         {
             if (!UdonAssemblyVersion.IsAlreadyEvaluated)
                 UdonAssemblyVersion.Initialize(references);
@@ -197,7 +256,7 @@ namespace UdonRabbit.Analyzer.Udon
             return actualVersion.CompareTo(targetVersion) > 0;
         }
 
-        public static bool IsUdonSharpLessThanOrEquals(List<MetadataReference> references, string version)
+        public static bool IsUdonSharpLessThanOrEquals(IReadOnlyList<MetadataReference> references, string version)
         {
             if (!UdonAssemblyVersion.IsAlreadyEvaluated)
                 UdonAssemblyVersion.Initialize(references);
@@ -208,7 +267,7 @@ namespace UdonRabbit.Analyzer.Udon
             return actualVersion.CompareTo(targetVersion) <= 0;
         }
 
-        public static bool IsUdonSharpLessThan(List<MetadataReference> references, string version)
+        public static bool IsUdonSharpLessThan(IReadOnlyList<MetadataReference> references, string version)
         {
             if (!UdonAssemblyVersion.IsAlreadyEvaluated)
                 UdonAssemblyVersion.Initialize(references);

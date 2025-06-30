@@ -181,5 +181,45 @@ namespace UdonRabbit
 
             await VerifyAnalyzerAsync(source);
         }
+        
+        [Fact]
+        public async Task TypeParameterMethodParameterTypeHasNoDiagnosticsReport()
+        {
+            const string source = @"
+using UdonSharp;
+
+namespace UdonRabbit
+{
+    public class TestBehaviour : UdonSharpBehaviour
+    {
+        private void TestMethod<T>(T t)
+        {
+        }
+    }
+}
+";
+
+            await VerifyAnalyzerAsync(source);
+        }
+        
+        [Fact]
+        public async Task TypeParameterArrayMethodParameterTypeHasNoDiagnosticsReport()
+        {
+            const string source = @"
+using UdonSharp;
+
+namespace UdonRabbit
+{
+    public class TestBehaviour : UdonSharpBehaviour
+    {
+        private void TestMethod<T>(T[] t)
+        {
+        }
+    }
+}
+";
+
+            await VerifyAnalyzerAsync(source);
+        }
     }
 }

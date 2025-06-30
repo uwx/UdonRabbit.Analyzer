@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using UdonRabbit.Analyzer.Utils;
 
 namespace UdonRabbit.Analyzer.Udon
 {
@@ -32,13 +34,15 @@ namespace UdonRabbit.Analyzer.Udon
 
         public string Resolve(string name)
         {
-            if (_assemblies.Any(w => w.EndsWith(name)))
-                return _assemblies.First(w => w.EndsWith(name));
+            if (_assemblies.FirstOrDefault(w => w.EndsWith(name)) is {} existing)
+                return existing;
 
             var dict = new Dictionary<string, bool>(_paths);
 
             foreach (var path in dict.Where(w => !w.Value))
             {
+                UdonRabbitLogger.Log($"path {path}");
+
                 var baseDir = string.IsNullOrEmpty(_sessionDir) ? Path.GetFullPath(Path.Combine(Path.GetTempPath(), "UdonRabbit.Analyzer", _unique, _session)) : _sessionDir;
                 if (!Directory.Exists(baseDir))
                 {
@@ -48,6 +52,9 @@ namespace UdonRabbit.Analyzer.Udon
 
                 var assemblies = Directory.GetFiles(path.Key, "*.dll", SearchOption.AllDirectories);
                 foreach (var assembly in assemblies)
+                {
+                    UdonRabbitLogger.Log($"assembly {assembly}");
+
                     if (assembly.Contains("ScriptAssemblies"))
                     {
                         var dest = Path.Combine(baseDir, Path.GetFileName(assembly));
@@ -66,13 +73,15 @@ namespace UdonRabbit.Analyzer.Udon
                     {
                         _assemblies.Add(assembly);
                     }
+                }
 
                 _paths[path.Key] = true;
 
-                if (assemblies.Any(w => w.EndsWith(name)))
-                    return assemblies.First(w => w.EndsWith(name));
+                if (assemblies.FirstOrDefault(w => w.EndsWith(name)) is {} existing2)
+                    return existing2;
             }
 
+            UdonRabbitLogger.Log($"failed to resolve {name}");
             return null;
         }
 

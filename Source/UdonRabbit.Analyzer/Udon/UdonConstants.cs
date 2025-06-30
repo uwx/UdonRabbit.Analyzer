@@ -9,6 +9,7 @@
         public const string UdonSharpSyncModeFullName = "UdonSharp.UdonSyncMode";
         public const string UdonSharpBehaviourSyncModeFullName = "UdonSharp.BehaviourSyncMode";
         public const string UdonSharpFieldChangeCallbackFullName = "UdonSharp.FieldChangeCallbackAttribute";
+        public const string UdonRabbitIgnoreAttributeFullName = "UdonRabbit.UdonRabbitIgnoreAttribute";
 
         public const string UdonCategory = "Udon";
         public const string UdonSharpCategory = "UdonSharp";

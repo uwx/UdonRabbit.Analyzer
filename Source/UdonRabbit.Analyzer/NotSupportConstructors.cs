@@ -14,7 +14,7 @@ namespace UdonRabbit.Analyzer
     {
         public const string ComponentId = "URA0007";
         private const string Category = UdonConstants.UdonSharpCategory;
-        private const string HelpLinkUri = "https://github.com/esnya/UdonRabbit.Analyzer/blob/master/docs/analyzers/URA0007.md";
+        private const string HelpLinkUri = "https://github.com/uwx/UdonRabbit.Analyzer/blob/master/docs/analyzers/URA0007.md";
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.URA0007Title), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.URA0007MessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.URA0007Description), Resources.ResourceManager, typeof(Resources));
@@ -35,7 +35,13 @@ namespace UdonRabbit.Analyzer
             if (!UdonSharpBehaviourUtility.ShouldAnalyzeSyntax(context.SemanticModel, declaration))
                 return;
 
-            UdonSharpBehaviourUtility.ReportDiagnosticsIfValid(context, RuleSet, declaration);
+            // if inherits from UdonSharpBehaviour and has constructor, report
+            var classDecl = declaration.FirstAncestorOrSelf<ClassDeclarationSyntax>();
+            
+            var declSymbol = context.SemanticModel.GetDeclaredSymbol(classDecl);
+            
+            if (declSymbol.BaseType.Equals(context.SemanticModel.Compilation.GetTypeByMetadataName(UdonConstants.UdonSharpBehaviourFullName), SymbolEqualityComparer.Default))
+                UdonSharpBehaviourUtility.ReportDiagnosticsIfValid(context, RuleSet, declaration);
         }
     }
 }

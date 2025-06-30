@@ -39,7 +39,7 @@ namespace UdonRabbit.Analyzer.Udon
             return paths;
         }
 
-        public static void Initialize(List<MetadataReference> references)
+        public static void Initialize(IReadOnlyList<MetadataReference> references)
         {
             lock (LockObj)
             {

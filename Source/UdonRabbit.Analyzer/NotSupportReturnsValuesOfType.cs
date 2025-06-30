@@ -15,7 +15,7 @@ namespace UdonRabbit.Analyzer
     {
         public const string ComponentId = "URA0026";
         private const string Category = UdonConstants.UdonCategory;
-        private const string HelpLinkUri = "https://github.com/esnya/UdonRabbit.Analyzer/blob/master/docs/analyzers/URA0026.md";
+        private const string HelpLinkUri = "https://github.com/uwx/UdonRabbit.Analyzer/blob/master/docs/analyzers/URA0026.md";
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.URA0026Title), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.URA0026MessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.URA0026Description), Resources.ResourceManager, typeof(Resources));
@@ -37,15 +37,32 @@ namespace UdonRabbit.Analyzer
                 return;
 
             if (!UdonAssemblyLoader.IsAssemblyLoaded)
-                UdonAssemblyLoader.LoadUdonAssemblies(context.Compilation.ExternalReferences.ToList());
+                UdonAssemblyLoader.LoadUdonAssemblies(context.Compilation.ExternalReferences);
 
             if (UdonSymbols.Instance == null)
                 UdonSymbols.Initialize();
 
             var @return = declaration.ReturnType;
             var typeSymbol = context.SemanticModel.GetTypeInfo(@return);
-            if (UdonSymbols.Instance?.FindUdonTypeName(context.SemanticModel, typeSymbol.Type) == false)
+            if (!IsTypeParameterOrArrayOfTypeParameter(typeSymbol.Type) &&
+                UdonSymbols.Instance?.FindUdonTypeName(context.SemanticModel, typeSymbol.Type) == false)
                 UdonSharpBehaviourUtility.ReportDiagnosticsIfValid(context, RuleSet, declaration, typeSymbol.Type.ToDisplayString());
+        }
+
+        private static bool IsTypeParameterOrArrayOfTypeParameter(ITypeSymbol type)
+        {
+            while (true)
+            {
+                if (type is ITypeParameterSymbol) return true;
+
+                if (type is IArrayTypeSymbol arrayType)
+                {
+                    type = arrayType.ElementType;
+                    continue;
+                }
+
+                return false;
+            }
         }
     }
 }

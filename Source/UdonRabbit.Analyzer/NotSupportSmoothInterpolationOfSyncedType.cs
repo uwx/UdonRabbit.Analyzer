@@ -15,7 +15,7 @@ namespace UdonRabbit.Analyzer
     {
         public const string ComponentId = "URA0046";
         private const string Category = UdonConstants.UdonCategory;
-        private const string HelpLinkUri = "https://github.com/esnya/UdonRabbit.Analyzer/blob/master/docs/analyzers/URA0046.md";
+        private const string HelpLinkUri = "https://github.com/uwx/UdonRabbit.Analyzer/blob/master/docs/analyzers/URA0046.md";
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.URA0046Title), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.URA0046MessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.URA0046Description), Resources.ResourceManager, typeof(Resources));
@@ -43,7 +43,7 @@ namespace UdonRabbit.Analyzer
                 return;
 
             if (!UdonAssemblyLoader.IsAssemblyLoaded)
-                UdonAssemblyLoader.LoadUdonAssemblies(context.Compilation.ExternalReferences.ToList());
+                UdonAssemblyLoader.LoadUdonAssemblies(context.Compilation.ExternalReferences);
 
             if (UdonSymbols.Instance == null)
                 UdonSymbols.Initialize();

@@ -7,6 +7,14 @@
     <RootNamespace>UdonRabbit.Analyzer</RootNamespace>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <OutputPath>..\..\..\Assets\NatsunekoLaboratory\UdonRabbit\Analyzer\Plugins\</OutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <OutputPath>..\..\..\Assets\NatsunekoLaboratory\UdonRabbit\Analyzer\Plugins\</OutputPath>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="3.3.1" />
   </ItemGroup>

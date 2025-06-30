@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis;
 
 using UdonRabbit.Analyzer.Extensions;
 using UdonRabbit.Analyzer.Udon.Reflection;
+using UdonRabbit.Analyzer.Utils;
 
 namespace UdonRabbit.Analyzer.Udon
 {
@@ -20,7 +21,8 @@ namespace UdonRabbit.Analyzer.Udon
         {
             "UdonSharpUdonSyncMode",
             "UdonSharpBehaviourSyncMode",
-            "UdonSharpUdonSharpBehaviour"
+            "UdonSharpUdonSharpBehaviour",
+            "UnityEngineBoneWeight"
         };
 
         private static readonly HashSet<string> AllowMethodNameList = new()
@@ -44,7 +46,31 @@ namespace UdonRabbit.Analyzer.Udon
             $"{UdonConstants.UdonCommonInterfacesReceiver}.__SetProgramVariable__SystemString_T__SystemVoid",
 
             // workaround for detecting false-positive for gameObject in UdonBehaviour
-            $"{UdonConstants.UdonCommonInterfacesReceiver}.__get_gameObject__UnityEngineGameObject"
+            $"{UdonConstants.UdonCommonInterfacesReceiver}.__get_gameObject__UnityEngineGameObject",
+            
+            // missing in exposure tree for some reason
+            "UnityEngineKeyframe.__ctor__SystemSingle_SystemSingle__UnityEngineKeyframe",
+            "UnityEngineKeyframe.__ctor__SystemSingle_SystemSingle_SystemSingle_SystemSingle__UnityEngineKeyframe",
+            "UnityEngineKeyframe.__ctor__SystemSingle_SystemSingle_SystemSingle_SystemSingle_SystemSingle_SystemSingle__UnityEngineKeyframe",
+            "UnityEngineBoneWeight.__ctor____UnityEngineBoneWeight",
+            
+            // TODO other instantiate overloads
+            "UnityEngineObject.__Instantiate__UnityEngineGameObject__UnityEngineGameObject",
+            "UnityEngineObject.__Instantiate__T_UnityEngineTransform__T",
+            "UnityEngineObject.__Instantiate__T__T",
+        };
+        
+        private static readonly HashSet<string> AllowVariableNameList = new()
+        {
+            "UnityEngine.BoneWeight.weight0",
+            "UnityEngine.BoneWeight.weight1",
+            "UnityEngine.BoneWeight.weight2",
+            "UnityEngine.BoneWeight.weight3",
+            "UnityEngine.BoneWeight.boneIndex0",
+            "UnityEngine.BoneWeight.boneIndex1",
+            "UnityEngine.BoneWeight.boneIndex2",
+            "UnityEngine.BoneWeight.boneIndex3",
+            "System.Array.Length",
         };
 
         private static readonly Dictionary<string, Type> BuiltinTypes = new()
@@ -165,6 +191,8 @@ namespace UdonRabbit.Analyzer.Udon
                 returnsSb.Append("__").Append(GetUdonNamedType(symbol.ConstructedFrom.ReturnType, true));
 
             var signature = $"{functionNamespace}.{functionName}{paramsSb}{returnsSb}";
+            
+            UdonRabbitLogger.Log($"Method signature: {signature}");
 
             return AllowMethodNameList.Contains(signature) || _nodeDefinitions.Contains(signature);
         }
@@ -185,7 +213,10 @@ namespace UdonRabbit.Analyzer.Udon
             var functionName = $"__{(isSetter ? "set" : "get")}_{fieldSymbol.Name.Trim('_')}";
             var param = $"__{GetUdonNamedType(fieldSymbol.Type)}";
             var signature = $"{functionNamespace}.{functionName}{param}";
-            return _nodeDefinitions.Contains(signature) || typeSymbol.TypeKind == TypeKind.Enum && _nodeDefinitions.Contains($"Type_{functionNamespace}");
+            
+            UdonRabbitLogger.Log($"Variable signature: {signature}");
+
+            return AllowVariableNameList.Contains(signature) || _nodeDefinitions.Contains(signature) || typeSymbol.TypeKind == TypeKind.Enum && _nodeDefinitions.Contains($"Type_{functionNamespace}");
         }
 
         public bool FindUdonVariableName(SemanticModel model, ITypeSymbol typeSymbol, IPropertySymbol symbol, bool isSetter)
@@ -229,7 +260,33 @@ namespace UdonRabbit.Analyzer.Udon
             if (signatureForType == "Type_SystemVoid")
                 return true;
 
-            return _nodeDefinitions.Contains(signatureForType) || _nodeDefinitions.Contains(signatureForVariable);
+            if (_nodeDefinitions.Contains(signatureForType) || _nodeDefinitions.Contains(signatureForVariable))
+                return true;
+            
+            // user-defined (not in exposure tree) non UdonSharpBehaviour type
+            if (typeSymbol.Locations.All(static w => w.IsInSource))
+            {
+                var ns = typeSymbol.ContainingNamespace.ToDisplayString();
+                if (!ns.StartsWith("UnityEngine.") &&
+                    ns != "UnityEngine" &&
+                    !ns.StartsWith("UnityEditor.") &&
+                    ns != "UnityEditor" &&
+                    !ns.StartsWith("System.") &&
+                    ns != "System" &&
+                    !ns.StartsWith("Unity.") &&
+                    ns != "Unity" &&
+                    !ns.StartsWith("Cinemachine.") &&
+                    ns != "Cinemachine" &&
+                    !ns.StartsWith("TMPro.") &&
+                    ns != "TMPro" &&
+                    !ns.StartsWith("VRC.") &&
+                    ns != "VRC")
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public bool FindUdonSyncType(ITypeSymbol symbol, string syncMode)
@@ -360,7 +417,7 @@ namespace UdonRabbit.Analyzer.Udon
             return symbol switch
             {
                 ITypeParameterSymbol => symbol.Name,
-                IArrayTypeSymbol a when a.ElementType is IArrayTypeSymbol || a.ElementType is ITypeParameterSymbol => $"{ToTypeParameterString(a.ElementType, isSkipBaseTypeRemap)}Array",
+                IArrayTypeSymbol { ElementType: IArrayTypeSymbol or ITypeParameterSymbol } a => $"{ToTypeParameterString(a.ElementType, isSkipBaseTypeRemap)}Array",
                 _ => GetUdonNamedType(ConvertTypeSymbolToType(symbol), isSkipBaseTypeRemap)
             };
         }
@@ -408,8 +465,8 @@ namespace UdonRabbit.Analyzer.Udon
 
             lock (LockObjForTypeMap)
             {
-                if (_symbolToTypeMappings.ContainsKey(p))
-                    return ConvertToTypeInternal(_symbolToTypeMappings[p]);
+                if (_symbolToTypeMappings.TryGetValue(p, out var type))
+                    return ConvertToTypeInternal(type);
 
                 if (BuiltinTypes.ContainsKey(p.ToDisplayString()))
                     return ConvertToTypeInternal(BuiltinTypes[p.ToDisplayString()]);
@@ -432,8 +489,8 @@ namespace UdonRabbit.Analyzer.Udon
                     }
                 }
 
-                if (_symbolToTypeMappings.ContainsKey(p))
-                    return _symbolToTypeMappings[p];
+                if (_symbolToTypeMappings.TryGetValue(p, out  type))
+                    return type;
 
                 var t = AppDomain.CurrentDomain.GetAssemblies()
                                  .SelectMany(LoadExportedTypes)

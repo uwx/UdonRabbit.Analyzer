@@ -1,4 +1,6 @@
-﻿using System.Collections.Immutable;
+﻿using System;
+using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 
 using Microsoft.CodeAnalysis;
@@ -7,6 +9,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
 using UdonRabbit.Analyzer.Udon;
+using UdonRabbit.Analyzer.Utils;
 
 namespace UdonRabbit.Analyzer
 {
@@ -15,7 +18,7 @@ namespace UdonRabbit.Analyzer
     {
         public const string ComponentId = "URA0002";
         private const string Category = UdonConstants.UdonCategory;
-        private const string HelpLinkUri = "https://github.com/esnya/UdonRabbit.Analyzer/blob/master/docs/analyzers/URA0002.md";
+        private const string HelpLinkUri = "https://github.com/uwx/UdonRabbit.Analyzer/blob/master/docs/analyzers/URA0002.md";
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.URA0002Title), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.URA0002MessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.URA0002Description), Resources.ResourceManager, typeof(Resources));
@@ -37,31 +40,44 @@ namespace UdonRabbit.Analyzer
             if (!UdonSharpBehaviourUtility.ShouldAnalyzeSyntax(context.SemanticModel, memberAccess))
                 return;
 
-            if (!UdonAssemblyLoader.IsAssemblyLoaded)
-                UdonAssemblyLoader.LoadUdonAssemblies(context.Compilation.ExternalReferences.ToList());
-
-            if (UdonSymbols.Instance == null)
-                UdonSymbols.Initialize();
-
-            var isAssignment = memberAccess.Parent is AssignmentExpressionSyntax assignment && assignment.Right != memberAccess;
-
-            var t = context.SemanticModel.GetTypeInfo(memberAccess.Expression);
-            var fieldSymbol = context.SemanticModel.GetSymbolInfo(memberAccess);
-            switch (fieldSymbol.Symbol)
+            try
             {
-                case IFieldSymbol field:
-                {
-                    if (UdonSymbols.Instance?.FindUdonVariableName(context.SemanticModel, t.Type, field, isAssignment) == false)
-                        UdonSharpBehaviourUtility.ReportDiagnosticsIfValid(context, RuleSet, memberAccess, field.Name);
-                    return;
-                }
+                if (!UdonAssemblyLoader.IsAssemblyLoaded)
+                    UdonAssemblyLoader.LoadUdonAssemblies(context.Compilation.ExternalReferences);
 
-                case IPropertySymbol props:
+                if (UdonSymbols.Instance == null)
+                    UdonSymbols.Initialize();
+
+                var isAssignment = memberAccess.Parent is AssignmentExpressionSyntax assignment && assignment.Right != memberAccess;
+
+                var t = context.SemanticModel.GetTypeInfo(memberAccess.Expression);
+                var fieldSymbol = context.SemanticModel.GetSymbolInfo(memberAccess);
+                
+                UdonRabbitLogger.Log($"Analyzing Member Access");
+                UdonRabbitLogger.Log($"Type: {t.Type.ToDisplayString()}");
+                UdonRabbitLogger.Log($"Field Symbol: {fieldSymbol.Symbol.ToDisplayString()}");
+                
+                switch (fieldSymbol.Symbol)
                 {
-                    if (UdonSymbols.Instance?.FindUdonVariableName(context.SemanticModel, t.Type, props, isAssignment) == false)
-                        UdonSharpBehaviourUtility.ReportDiagnosticsIfValid(context, RuleSet, memberAccess, props.Name);
-                    return;
+                    case IFieldSymbol field:
+                    {
+                        if (UdonSymbols.Instance?.FindUdonVariableName(context.SemanticModel, t.Type, field, isAssignment) == false)
+                            UdonSharpBehaviourUtility.ReportDiagnosticsIfValid(context, RuleSet, memberAccess, field.Name);
+                        return;
+                    }
+
+                    case IPropertySymbol props:
+                    {
+                        if (UdonSymbols.Instance?.FindUdonVariableName(context.SemanticModel, t.Type, props, isAssignment) == false)
+                            UdonSharpBehaviourUtility.ReportDiagnosticsIfValid(context, RuleSet, memberAccess, props.Name);
+                        return;
+                    }
                 }
+            }
+            catch (Exception e)
+            {
+                UdonRabbitLogger.Log($"Exception {e.Message}");
+                UdonRabbitLogger.Log($"{e.StackTrace}");
             }
         }
     }

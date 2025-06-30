@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
 using UdonRabbit.Analyzer.Udon;
+using UdonRabbit.Analyzer.Utils;
 
 namespace UdonRabbit.Analyzer
 {
@@ -15,7 +16,7 @@ namespace UdonRabbit.Analyzer
     {
         public const string ComponentId = "URA0027";
         private const string Category = UdonConstants.UdonCategory;
-        private const string HelpLinkUri = "https://github.com/esnya/UdonRabbit.Analyzer/blob/master/docs/analyzers/URA0027.md";
+        private const string HelpLinkUri = "https://github.com/uwx/UdonRabbit.Analyzer/blob/master/docs/analyzers/URA0027.md";
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.URA0027Title), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.URA0027MessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.URA0027Description), Resources.ResourceManager, typeof(Resources));
@@ -37,7 +38,7 @@ namespace UdonRabbit.Analyzer
                 return;
 
             if (!UdonAssemblyLoader.IsAssemblyLoaded)
-                UdonAssemblyLoader.LoadUdonAssemblies(context.Compilation.ExternalReferences.ToList());
+                UdonAssemblyLoader.LoadUdonAssemblies(context.Compilation.ExternalReferences);
 
             if (UdonSymbols.Instance == null)
                 UdonSymbols.Initialize();
@@ -45,8 +46,26 @@ namespace UdonRabbit.Analyzer
             foreach (var parameter in declaration.ParameterList.Parameters)
             {
                 var symbol = context.SemanticModel.GetTypeInfo(parameter.Type);
-                if (UdonSymbols.Instance?.FindUdonTypeName(context.SemanticModel, symbol.Type) == false)
+                // UdonRabbitLogger.Log($"Type: {symbol.Type.GetType()}");
+                if (!IsTypeParameterOrArrayOfTypeParameter(symbol.Type) &&
+                    UdonSymbols.Instance?.FindUdonTypeName(context.SemanticModel, symbol.Type) == false)
                     UdonSharpBehaviourUtility.ReportDiagnosticsIfValid(context, RuleSet, parameter, symbol.Type.ToDisplayString());
+            }
+        }
+
+        private static bool IsTypeParameterOrArrayOfTypeParameter(ITypeSymbol type)
+        {
+            while (true)
+            {
+                if (type is ITypeParameterSymbol) return true;
+
+                if (type is IArrayTypeSymbol arrayType)
+                {
+                    type = arrayType.ElementType;
+                    continue;
+                }
+
+                return false;
             }
         }
     }

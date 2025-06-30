@@ -44,22 +44,14 @@ namespace UdonRabbit.Analyzer.Udon
 
         private static IEnumerable<string> FindAssetsDirectoryFromPath(string path)
         {
-            var paths = new List<string>();
-
-            var lastIndex = 0;
-            while (path.IndexOf("Assets", lastIndex, StringComparison.InvariantCulture) >= 0)
+            // Packages\com.vrchat.worlds\Runtime\VRCSDK\Plugins
+            return new[]
             {
-                var idx = path.IndexOf("Assets", lastIndex, StringComparison.InvariantCulture);
-                paths.Add(path.Substring(0, idx));
-
-                lastIndex = idx + "Assets".Length;
-            }
-
-            paths.Reverse();
-            return paths;
+                Path.GetFullPath(Path.Combine(path, "../../../../../.."))
+            };
         }
 
-        public static void LoadUdonAssemblies(List<MetadataReference> references)
+        public static void LoadUdonAssemblies(IReadOnlyList<MetadataReference> references)
         {
             lock (LockObj)
             {

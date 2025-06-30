@@ -15,7 +15,7 @@ namespace UdonRabbit.Analyzer
     {
         public const string ComponentId = "URA0044";
         private const string Category = UdonConstants.UdonCategory;
-        private const string HelpLinkUri = "https://github.com/esnya/UdonRabbit.Analyzer/blob/master/docs/analyzers/URA0044.md";
+        private const string HelpLinkUri = "https://github.com/uwx/UdonRabbit.Analyzer/blob/master/docs/analyzers/URA0044.md";
         private static readonly LocalizableString Title = new LocalizableResourceString(nameof(Resources.URA0044Title), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString MessageFormat = new LocalizableResourceString(nameof(Resources.URA0044MessageFormat), Resources.ResourceManager, typeof(Resources));
         private static readonly LocalizableString Description = new LocalizableResourceString(nameof(Resources.URA0044Description), Resources.ResourceManager, typeof(Resources));
