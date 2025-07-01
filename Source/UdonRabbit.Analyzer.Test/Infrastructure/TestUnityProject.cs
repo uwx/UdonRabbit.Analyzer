@@ -216,7 +216,7 @@ namespace UdonRabbit.Analyzer.Test.Infrastructure
         private static void VerifyDiagnosticsResults(Diagnostic[] actualResults, params DiagnosticResult[] expectedResults)
         {
             if (expectedResults.Length != actualResults.Length)
-                Assert.True(false, $"Mismatch between number of diagnostics returned, expected {expectedResults.Length} actual {actualResults.Length}.");
+                Assert.True(false, $"Mismatch between number of diagnostics returned, expected {expectedResults.Length} actual {actualResults.Length}.\nDiagnostics:\n{string.Join("\n", actualResults.Select(w => w.ToString()))}");
 
             for (var i = 0; i < expectedResults.Length; i++)
             {
