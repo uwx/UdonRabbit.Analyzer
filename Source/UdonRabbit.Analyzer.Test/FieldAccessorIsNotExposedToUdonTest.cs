@@ -425,8 +425,8 @@ namespace UdonRabbit
         public async Task UdonSharpBehaviourNotAllowedUnityGameObjectAccessorHasDiagnosticsReport()
         {
             var diagnostic = ExpectDiagnostic(FieldAccessorIsNotExposedToUdon.ComponentId)
-                             .WithSeverity(DiagnosticSeverity.Error)
-                             .WithArguments("gameObject");
+                .WithSeverity(DiagnosticSeverity.Error)
+                .WithArguments("gameObject");
 
             const string source = @"
 using UdonSharp;
@@ -443,6 +443,31 @@ namespace UdonRabbit
         private void Start()
         {
             var go = [|_field.gameObject|];
+        }
+    }
+}
+";
+
+            await VerifyAnalyzerAsync(source, diagnostic);
+        }
+
+        [Fact]
+        public async Task NonUdonSharpBehaviourNotAllowedShaderNameHasDiagnosticsReport()
+        {
+            var diagnostic = ExpectDiagnostic(FieldAccessorIsNotExposedToUdon.ComponentId)
+                .WithSeverity(DiagnosticSeverity.Error)
+                .WithArguments("name");
+
+            const string source = @"
+using UnityEngine;
+
+namespace UdonRabbit
+{
+    public class TestClass
+    {
+		public static void Write(Material material, byte[] buffer, int index)
+		{
+            Debug.Log([|material.shader.name|]);
         }
     }
 }
