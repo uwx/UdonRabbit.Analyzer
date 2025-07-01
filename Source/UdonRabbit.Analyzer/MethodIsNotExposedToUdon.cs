@@ -12,6 +12,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
 using UdonRabbit.Analyzer.Udon;
+using UdonRabbit.Analyzer.Utils;
 
 namespace UdonRabbit.Analyzer
 {
@@ -32,8 +33,8 @@ namespace UdonRabbit.Analyzer
         {
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
-            context.RegisterSyntaxNodeAction(AnalyzeInvocation, SyntaxKind.InvocationExpression);
-            context.RegisterSyntaxNodeAction(AnalyzeObjectCreation, SyntaxKind.ObjectCreationExpression);
+            context.RegisterSyntaxNodeAction(UdonRabbitLogger.Catching(AnalyzeInvocation), SyntaxKind.InvocationExpression);
+            context.RegisterSyntaxNodeAction(UdonRabbitLogger.Catching(AnalyzeObjectCreation), SyntaxKind.ObjectCreationExpression);
         }
 
         private static void AnalyzeInvocation(SyntaxNodeAnalysisContext context)

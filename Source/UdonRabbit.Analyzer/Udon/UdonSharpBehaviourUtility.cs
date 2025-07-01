@@ -75,7 +75,7 @@ namespace UdonRabbit.Analyzer.Udon
             var udonRabbitIgnoreAttributeSymbol = semanticModel.Compilation.GetTypeByMetadataName(UdonConstants.UdonRabbitIgnoreAttributeFullName);
             if (classDecl.AttributeLists.SelectMany(w => w.Attributes)
                 .Select(w => (INamedTypeSymbol) semanticModel.GetDeclaredSymbol(w))
-                .Any(w => w.Equals(udonRabbitIgnoreAttributeSymbol, SymbolEqualityComparer.Default)))
+                .Any(w => w?.Equals(udonRabbitIgnoreAttributeSymbol, SymbolEqualityComparer.Default) == true))
                 return false;
 
             UdonRabbitLogger.Log($"Analyzing {declSymbol.Name}");

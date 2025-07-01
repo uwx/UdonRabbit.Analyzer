@@ -30,7 +30,7 @@ namespace UdonRabbit.Analyzer
         {
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.None);
-            context.RegisterSyntaxNodeAction(AnalyzeMemberAccess, SyntaxKind.SimpleMemberAccessExpression);
+            context.RegisterSyntaxNodeAction(UdonRabbitLogger.Catching(AnalyzeMemberAccess), SyntaxKind.SimpleMemberAccessExpression);
         }
 
         private static void AnalyzeMemberAccess(SyntaxNodeAnalysisContext context)

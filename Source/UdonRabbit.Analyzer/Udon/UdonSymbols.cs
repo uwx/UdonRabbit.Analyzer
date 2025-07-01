@@ -157,7 +157,11 @@ namespace UdonRabbit.Analyzer.Udon
             if (UdonSharpBehaviourUtility.IsUserDefinedTypes(model, receiver, receiver.TypeKind))
                 return true;
 
-            var t = RemapVrcBaseTypes(ConvertTypeSymbolToType(receiver));
+            var type = ConvertTypeSymbolToType(receiver);
+            if (type == null) // method called on type parameter receivder. IDK what to do about this.
+                return true;
+
+            var t = RemapVrcBaseTypes(type);
             var functionNamespace = SanitizeTypeName(t.FullName).Replace(UdonConstants.UdonBehaviour, UdonConstants.UdonCommonInterfacesReceiver);
             if (functionNamespace.CountOf("Array") >= 2)
                 functionNamespace = functionNamespace.Substring(0, functionNamespace.IndexOf("Array", StringComparison.InvariantCulture) + "Array".Length); // fix for jagged array
