@@ -53,6 +53,7 @@ namespace UdonRabbit.Analyzer.Udon
             "UnityEngineKeyframe.__ctor__SystemSingle_SystemSingle_SystemSingle_SystemSingle__UnityEngineKeyframe",
             "UnityEngineKeyframe.__ctor__SystemSingle_SystemSingle_SystemSingle_SystemSingle_SystemSingle_SystemSingle__UnityEngineKeyframe",
             "UnityEngineBoneWeight.__ctor____UnityEngineBoneWeight",
+            "UnityEngineMatrix4x4.__ctor____UnityEngineMatrix4x4",
             
             // TODO other instantiate overloads
             "UnityEngineObject.__Instantiate__UnityEngineGameObject__UnityEngineGameObject",
@@ -216,7 +217,7 @@ namespace UdonRabbit.Analyzer.Udon
             
             UdonRabbitLogger.Log($"Variable signature: {signature}");
 
-            return AllowVariableNameList.Contains(signature) || _nodeDefinitions.Contains(signature) || typeSymbol.TypeKind == TypeKind.Enum && _nodeDefinitions.Contains($"Type_{functionNamespace}");
+            return AllowVariableNameList.Contains(signature) || (_nodeDefinitions.Contains(signature) || typeSymbol.TypeKind == TypeKind.Enum && _nodeDefinitions.Contains($"Type_{functionNamespace}"));
         }
 
         public bool FindUdonVariableName(SemanticModel model, ITypeSymbol typeSymbol, IPropertySymbol symbol, bool isSetter)
@@ -260,9 +261,10 @@ namespace UdonRabbit.Analyzer.Udon
             if (signatureForType == "Type_SystemVoid")
                 return true;
 
-            if (_nodeDefinitions.Contains(signatureForType) || _nodeDefinitions.Contains(signatureForVariable))
+            if (_nodeDefinitions.Contains(signatureForType) || _nodeDefinitions.Contains(signatureForVariable) ||
+                AllowClassNameList.Contains(@namespace))
                 return true;
-            
+
             // user-defined (not in exposure tree) non UdonSharpBehaviour type
             if (typeSymbol.Locations.All(static w => w.IsInSource))
             {
