@@ -68,15 +68,27 @@ namespace UdonRabbit.Analyzer.Udon
                 filePath?.Contains("Packages\\com.vrchat.base") == true ||
                 filePath?.Contains("Packages\\com.vrchat.worlds") == true ||
                 filePath?.Contains("Packages\\com.merlin.UdonSharp") == true ||
-                filePath?.Contains("Packages\\com.vrchat.core.vpm-resolver") == true)
+                filePath?.Contains("Packages\\com.vrchat.core.vpm-resolver") == true ||
+                filePath?.Contains("NatsunekoLaboratory\\UdonRabbit\\Analyzer\\Runtime") == true ||
+                filePath?.Contains("NatsunekoLaboratory/UdonRabbit/Analyzer/Runtime") == true)
+                return false;
+
+            // I GIVE UP OKAY. YOU'RE NOT SUPPOSED TO DO THIS, BUT I'M STILL DOING IT BECAUSE I CAN'T GET THE TYPESYMBOL FOR THE ATTRIBUTE
+            if (classDecl.AttributeLists.SelectMany(w => w.Attributes)
+                .Any(w => w.Name.ToString() == "UdonRabbitIgnore"))
                 return false;
             
-            // is not [UdonRabbitIgnore]
-            var udonRabbitIgnoreAttributeSymbol = semanticModel.Compilation.GetTypeByMetadataName(UdonConstants.UdonRabbitIgnoreAttributeFullName);
-            if (classDecl.AttributeLists.SelectMany(w => w.Attributes)
-                .Select(w => (INamedTypeSymbol) semanticModel.GetDeclaredSymbol(w))
-                .Any(w => w?.Equals(udonRabbitIgnoreAttributeSymbol, SymbolEqualityComparer.Default) == true))
-                return false;
+            // // is not [UdonRabbitIgnore]
+            // var udonRabbitIgnoreAttributeSymbol = semanticModel.Compilation.GetTypeByMetadataName(UdonConstants.UdonRabbitIgnoreAttributeFullName);
+            // if (classDecl.AttributeLists.SelectMany(w => w.Attributes)
+            //     .Select(w => (INamedTypeSymbol) semanticModel.GetDeclaredSymbol(w))
+            //     .Any(w => w?.Equals(udonRabbitIgnoreAttributeSymbol, SymbolEqualityComparer.Default) == true))
+            //     return false;
+            //
+            // UdonRabbitLogger.Log($"udonRabbitIgnoreAttributeSymbol: {udonRabbitIgnoreAttributeSymbol?.ToDisplayString()}");
+            // UdonRabbitLogger.Log($"classDecl.AttributeLists: {string.Join(", ", classDecl.AttributeLists.SelectMany(w => w.Attributes).Select(w => (INamedTypeSymbol) semanticModel.GetDeclaredSymbol(w)).Select(w => w?.ToDisplayString()))}");
+            //
+            // UdonRabbitLogger.Log($"classDecl.AttributeLists2: {string.Join(", ", classDecl.AttributeLists.SelectMany(w => w.Attributes).Select(w => w.Name.ToString()))}");
 
             UdonRabbitLogger.Log($"Analyzing {declSymbol.Name}");
             UdonRabbitLogger.Log($"Namespace: {ns}");

@@ -325,10 +325,10 @@ namespace UdonRabbit.Analyzer.Udon
                 depth++;
             }
 
-            if (!_inheritedTypeMap.ContainsKey(current))
+            if (!_inheritedTypeMap.TryGetValue(current, out var value))
                 return t;
 
-            t = _inheritedTypeMap[current];
+            t = value;
             while (depth-- > 0)
                 t = t.MakeArrayType();
 
